@@ -1,0 +1,454 @@
+{
+  "name": "Solar Lead Qualifier",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistantYou are an expert sales qualifier for a Solar & Electrical contracting company. \nAnalyze the incoming customer inquiry and classify it into one of three categories:\n- HOT_LEAD (High capacity > 10kW, commercial, or urgent requirement)\n- WARM_LEAD (Residential, general inquiry, medium capacity)\n- LOW_PRIORITY (Spam, minor repair under $100, or unclear details)\n\nOutput your response strictly in JSON format with keys:\n- \"classification\": (HOT_LEAD / WARM_LEAD / LOW_PRIORITY)\n- \"estimated_value\": (High / Medium / Low)\n- \"summary\": (A one-sentence summary for the sales manager)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        528,
+        -224
+      ],
+      "id": "15688619-8046-47f3-9e68-848d3ca3379c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        496,
+        -80
+      ],
+      "id": "34122be5-7be0-4301-9bc1-ebff8c9ebdb4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Rmd03KNJOxWi9dNy",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "16aff493-6ac5-433f-8dd5-761cf5ffaa01",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        -304
+      ],
+      "id": "3d0d48cf-aeca-44f6-82b5-9d9fd7cdd492",
+      "name": "Webhook",
+      "webhookId": "16aff493-6ac5-433f-8dd5-761cf5ffaa01"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71b64688-e2ef-4416-915c-3c8b30c751ae",
+              "leftValue": "={{ JSON.parse($('AI Agent').item.json.output.replace(/```json\\n|\\n```/g, '')).classification }}",
+              "rightValue": "HOT_LEAD",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1056,
+        -272
+      ],
+      "id": "11779ac2-2596-488e-93c7-6145ea19e6b0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "meharsultann@gmail.com",
+        "subject": "🚨 URGENT: New Hot Solar Lead Received!",
+        "message": "=<h2>🔥 New High-Priority Solar Lead</h2>\n<p>A new hot lead has been qualified by the AI system.</p>\n\n<hr>\n\n<h3>Client Details:</h3>\n<p><b>Name:</b> {{ $('Webhook').item.json.body.customer_name }}</p>\n<p><b>Phone:</b> {{ $('Webhook').item.json.body.phone }}</p>\n<p><b>City:</b> {{ $('Webhook').item.json.body.city }}</p>\n<p><b>System Size:</b> {{ $('Webhook').item.json.body.system_size_kw }} kW</p>\n<p><b>Property Type:</b> {{ $('Webhook').item.json.body.property_type }}</p>\n\n<br>\n<h3>AI Analysis Summary:</h3>\n<p><i>{{ JSON.parse($('AI Agent').item.json.output.replace(/```json\\n|\\n```/g, '')).summary }}</i></p>\n\n<hr>\n<p><b>Original Message:</b> {{ $('Webhook').item.json.body.message }}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1328,
+        -320
+      ],
+      "id": "0ba5ce7a-1267-4bd2-8d74-3b8615cf4677",
+      "name": "Send a message",
+      "webhookId": "c0e4db4e-85cd-4195-b528-275af127b99a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "x9EYFfplxlhBAC1z",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "=https://docs.google.com/spreadsheets/d/1aSFBl3JKuffrGJ7TC2u8SJjA6kpyWf9IonUZR7aIFrM/edit?gid=0#gid=0"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aSFBl3JKuffrGJ7TC2u8SJjA6kpyWf9IonUZR7aIFrM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "System Size": "={{ $('Webhook').item.json.body.system_size_kw }}",
+            "Property Type": "={{ $('Webhook').item.json.body.property_type }}",
+            "Message": "={{ $('Webhook').item.json.body.message }}",
+            "City": "={{ $('Webhook').item.json.body.city }}",
+            "Email": "={{ $('Webhook').item.json.body.email }}",
+            "Phone": "={{ $('Webhook').item.json.body.phone }}",
+            "Name": "={{ $('Webhook').item.json.body.customer_name }}"
+          },
+          "matchingColumns": [
+            "output"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "System Size",
+              "displayName": "System Size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Property Type",
+              "displayName": "Property Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "output",
+              "displayName": "output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        -272
+      ],
+      "id": "50a5a00d-3bc5-4a51-bdb5-7199f3c9d7ca",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Sdu8LX4kNkCohNCD",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1aSFBl3JKuffrGJ7TC2u8SJjA6kpyWf9IonUZR7aIFrM",
+          "mode": "list",
+          "cachedResultName": "Solar Leads Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1aSFBl3JKuffrGJ7TC2u8SJjA6kpyWf9IonUZR7aIFrM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Phone",
+              "lookupValue": "={{ $json.cleanPhone }}"
+            },
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.cleanEmail }}"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        112,
+        -304
+      ],
+      "id": "accd032b-68a4-4c1a-bc30-d13147d4bda3",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Sdu8LX4kNkCohNCD",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c075592f-9025-489c-b18d-d175e44cb05d",
+              "leftValue": "={{ $json.Phone }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "58678fbe-b1e9-4da5-b4a5-38f12bd89ec8",
+              "leftValue": "={{ $json.Email }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        -304
+      ],
+      "id": "fe800355-a728-4d9c-ae3b-1542ebb36612",
+      "name": "Duplicate checker",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const body = item.json.body || {};\n  \n  // Phone se '+' sign aur extra spaces remove karein taake sheet ke format se match ho\n  let formattedPhone = body.phone ? body.phone.toString().replace('+', '').trim() : '';\n  \n  const safePhone = formattedPhone !== '' \n    ? formattedPhone \n    : `MISSING_PHONE_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;\n    \n  const safeEmail = body.email && body.email.trim() !== '' \n    ? body.email.trim() \n    : `MISSING_EMAIL_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;\n\n  item.json.cleanPhone = safePhone;\n  item.json.cleanEmail = safeEmail;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -304
+      ],
+      "id": "b2f3d63c-340d-49dc-8de2-03e1ccc97c8c",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Duplicate checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate checker": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "23ca1981-ea58-4bac-b909-2f8a706b19e1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2ea9c60509852f32d71df5de0651e16c87cde02d8f97773c8d427bf42af4f787"
+  },
+  "id": "68CzfWazjpNKD557",
+  "tags": []
+}
