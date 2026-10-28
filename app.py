@@ -34,7 +34,7 @@ with tab1:
         if not customer_name or not phone:
             st.error("❌ Name aur Phone Number fill karna zaroori hai!")
         else:
-            # Apne n8n Webhook ka URL paste karein
+            #  n8n Webhook URL 
             WEBHOOK_URL = "https://liturgiological-floy-convenably.ngrok-free.dev/webhook-test/16aff493-6ac5-433f-8dd5-761cf5ffaa01"
             
             payload = {
@@ -66,7 +66,7 @@ with tab2:
     if st.button("🔄 Refresh Data"):
         st.rerun()
 
-    # Public Google Sheet CSV Link (Google Sheet ko File -> Share -> Publish to Web -> CSV karein)
+    # Public Google Sheet CSV Link
     SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1aSFBl3JKuffrGJ7TC2u8SJjA6kpyWf9IonUZR7aIFrM/edit?usp=sharing"
 
     try:
